@@ -3,7 +3,6 @@
 A simple FastAPI-based REST API for managing users with CRUD operations.
 
 ## Features
-
 - ✅ Create new users
 - ✅ List all users
 - ✅ Get user by ID
@@ -133,7 +132,3 @@ Once the API is running, visit:
 - **Pydantic** - Data validation using Python type hints
 - **Uvicorn** - ASGI server
 - **Docker** - Containerization
-
-## License
-
-MIT License
