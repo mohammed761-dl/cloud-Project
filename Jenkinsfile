@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_REGISTRY = '74.242.218.126:5000'
+        DOCKER_REGISTRY = '74.242.218.126:3000'
         IMAGE_NAME = 'user-mgmt-api'
         CONTAINER_NAME = 'user-api'
         PORT = '3000'
