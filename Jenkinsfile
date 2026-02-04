@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_REGISTRY = '74.242.218.126:3000'
-        IMAGE_NAME = 'user-mgmt-api'
+        IMAGE_NAME = 'mohammed/user-mgmt-api'
         TAG = "${env.BUILD_NUMBER}"
     }
 
