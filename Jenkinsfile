@@ -43,6 +43,18 @@ pipeline {
             }
         }
         
+        stage('Deploy FastAPI') {
+            steps {
+                echo '🚀 Deploying FastAPI on port 8000...'
+                script {
+                    sh """
+                        docker stop ${CONTAINER_NAME} || true
+                        docker rm ${CONTAINER_NAME} || true
+                        docker run -d -p 8000:8000 --name ${CONTAINER_NAME} ${DOCKER_REGISTRY}/${IMAGE_NAME}:latest
+                    """
+                }
+            }
+        }
 
     }
     
