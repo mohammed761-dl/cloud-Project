@@ -130,8 +130,3 @@ Once the API is running, visit:
 
 - **FastAPI** - Modern Python web framework
 - **Pydantic** - Data validation using Python type hints
-- **Uvicorn** - ASGI server
-- **Docker** - Containerization
-
-
-
