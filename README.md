@@ -132,6 +132,3 @@ Once the API is running, visit:
 - **Pydantic** - Data validation using Python type hints
 - **Uvicorn** - ASGI server
 - **Docker** - Containerization
-
-
-
