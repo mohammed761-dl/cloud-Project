@@ -43,17 +43,15 @@ pipeline {
                     script {
                         echo '☸️ Deploying to Azure K8s...'
                         sh """
-                            # This tells kubectl to use your Azure VM credentials
                             export KUBECONFIG=${KUBECONFIG_FILE}
                             
-                            # Deploy the application
-                            kubectl apply -f k8s-deploy.yaml
+                            # Added --validate=false to bypass the timeout issue
+                            kubectl apply -f k8s-deploy.yaml --validate=false
                             
-                            # Update the image to the latest version built in this pipeline
                             kubectl set image deployment/user-management-app \
-                                fastapi-user-mgmt=${DOCKER_REGISTRY}/${IMAGE_NAME}:${TAG}
+                                fastapi-user-mgmt=${DOCKER_REGISTRY}/${IMAGE_NAME}:${TAG} \
+                                --validate=false
                                 
-                            # Wait for the deployment to finish successfully
                             kubectl rollout status deployment/user-management-app --timeout=5m
                         """
                     }
