@@ -36,6 +36,21 @@ pipeline {
                 }
             }
         }
+        stage('Deploy to Azure K8s') {
+            steps {
+                script {
+                    echo '☸️ Deploying to Azure K8s...'
+                    // Update the image in the deployment with the newly built image
+                    sh """
+                        kubectl apply -f k8s-deploy.yaml
+                        kubectl set image deployment/user-management-app \
+                            fastapi-user-mgmt=${DOCKER_REGISTRY}/${IMAGE_NAME}:${TAG} \
+                            --record
+                        kubectl rollout status deployment/user-management-app --timeout=5m
+                    """
+                }
+            }
+        }
     }
 
     post {
