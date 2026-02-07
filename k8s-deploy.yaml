@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: fastapi-user-mgmt
-          image: 74.242.218.195:3000/mohammed/user-mgmt-api:latest
+          image: 74.242.218.126:3000/mohammed/user-mgmt-api:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
