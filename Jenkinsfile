@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY = '74.242.218.126:3000'
+        // Use the KUBERNET VM IP here (.195), not the Jenkins IP (.126)
+        DOCKER_REGISTRY = '74.242.218.195:3000'
         IMAGE_NAME = 'mohammed/user-mgmt-api'
         TAG = "${env.BUILD_NUMBER}"
     }
@@ -47,13 +48,10 @@ pipeline {
                             # Test connectivity first
                             kubectl cluster-info
                             
-                            # Apply manifests
-                            kubectl apply -f k8s-deploy.yaml
-                            
-                            # Update image to the newly built version
-                            kubectl set image deployment/user-management-app \
-                                fastapi-user-mgmt=${DOCKER_REGISTRY}/${IMAGE_NAME}:${TAG} \
-                                --record
+                            kubectl apply -f k8s-deploy.yaml \
+                            --server=https://74.242.218.195:6443 \
+                            --insecure-skip-tls-verify=true \
+                            --validate=false
                             
                             # Wait for rollout to complete
                             kubectl rollout status deployment/user-management-app --timeout=5m
