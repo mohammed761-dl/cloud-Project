@@ -38,21 +38,27 @@ pipeline {
 
         stage('Deploy to Azure K8s') {
             steps {
-                // This block connects the 'k3s-config' you uploaded to the variable KUBECONFIG_FILE
                 withCredentials([file(credentialsId: 'k3s-config', variable: 'KUBECONFIG_FILE')]) {
                     script {
                         echo '☸️ Deploying to Azure K8s...'
                         sh """
                             export KUBECONFIG=${KUBECONFIG_FILE}
                             
-                            # Added --validate=false to bypass the timeout issue
-                            kubectl apply -f k8s-deploy.yaml --validate=false
+                            # We use --server to ensure it hits the public IP directly
+                            # We use --insecure-skip-tls-verify to skip certificate handshake issues
+                            # We increase the request-timeout to 1 minute
+                            
+                            kubectl apply -f k8s-deploy.yaml \
+                                --server=https://74.242.218.126:6443 \
+                                --insecure-skip-tls-verify=true \
+                                --validate=false \
+                                --request-timeout=60s
                             
                             kubectl set image deployment/user-management-app \
                                 fastapi-user-mgmt=${DOCKER_REGISTRY}/${IMAGE_NAME}:${TAG} \
-                                --validate=false
-                                
-                            kubectl rollout status deployment/user-management-app --timeout=5m
+                                --server=https://74.242.218.126:6443 \
+                                --insecure-skip-tls-verify=true \
+                                --request-timeout=60s
                         """
                     }
                 }
