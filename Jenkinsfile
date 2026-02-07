@@ -8,7 +8,6 @@ pipeline {
     }
 
     stages {
-
         stage('Build Docker Image') {
             steps {
                 echo '🔨 Building Docker image...'
@@ -36,18 +35,28 @@ pipeline {
                 }
             }
         }
+
         stage('Deploy to Azure K8s') {
             steps {
-                script {
-                    echo '☸️ Deploying to Azure K8s...'
-                    // Update the image in the deployment with the newly built image
-                    sh """
-                        kubectl apply -f k8s-deploy.yaml
-                        kubectl set image deployment/user-management-app \
-                            fastapi-user-mgmt=${DOCKER_REGISTRY}/${IMAGE_NAME}:${TAG} \
-                            --record
-                        kubectl rollout status deployment/user-management-app --timeout=5m
-                    """
+                // This block connects the 'k3s-config' you uploaded to the variable KUBECONFIG_FILE
+                withCredentials([file(credentialsId: 'k3s-config', variable: 'KUBECONFIG_FILE')]) {
+                    script {
+                        echo '☸️ Deploying to Azure K8s...'
+                        sh """
+                            # This tells kubectl to use your Azure VM credentials
+                            export KUBECONFIG=${KUBECONFIG_FILE}
+                            
+                            # Deploy the application
+                            kubectl apply -f k8s-deploy.yaml
+                            
+                            # Update the image to the latest version built in this pipeline
+                            kubectl set image deployment/user-management-app \
+                                fastapi-user-mgmt=${DOCKER_REGISTRY}/${IMAGE_NAME}:${TAG}
+                                
+                            # Wait for the deployment to finish successfully
+                            kubectl rollout status deployment/user-management-app --timeout=5m
+                        """
+                    }
                 }
             }
         }
