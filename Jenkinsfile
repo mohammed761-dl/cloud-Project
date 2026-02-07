@@ -48,10 +48,11 @@ pipeline {
                             # Test connectivity first
                             kubectl cluster-info
                             
-                            kubectl apply -f k8s-deploy.yaml \
-                            --server=https://74.242.218.195:6443 \
-                            --insecure-skip-tls-verify=true \
-                            --validate=false
+                            kubectl apply -f k8s-deploy.yaml
+                            
+                            kubectl set image deployment/user-management-app \
+                                fastapi-user-mgmt=${DOCKER_REGISTRY}/${IMAGE_NAME}:${TAG} \
+                                --record
                             
                             # Wait for rollout to complete
                             kubectl rollout status deployment/user-management-app --timeout=5m
