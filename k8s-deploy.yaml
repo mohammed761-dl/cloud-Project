@@ -12,14 +12,15 @@ spec:
       labels:
         app: user-api
     spec:
+      # This MUST be inside the pod spec
+      imagePullSecrets:
+        - name: gitea-creds
       containers:
         - name: fastapi-user-mgmt
           image: 74.242.218.126:3000/mohammed/user-mgmt-api:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
-      imagePullSecrets:
-        - name: gitea-creds
 ---
 apiVersion: v1
 kind: Service
