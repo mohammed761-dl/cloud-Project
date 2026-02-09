@@ -3,19 +3,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from uuid import UUID, uuid4
 from typing import List
+from fastapi.middleware.cors import CORSMiddleware
 import os
+
 
 app = FastAPI()
 
-# --- STEP 1: FIX THE "OFFLINE" ERROR (CORS) ---
-# This allows your frontend at port 30081 to talk to this API at port 30080
+# --- 2. ADD THIS EXACT BLOCK ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with your specific IP
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ... rest of your code (models, db, endpoints)
 
 # Notre modèle de données
 class User(BaseModel):
