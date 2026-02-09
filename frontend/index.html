@@ -1,41 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud Project | User Management</title>
-    <style>
-        :root { --primary: #0078d4; --danger: #e81123; --success: #107c10; --bg: #f3f2f1; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: var(--bg); color: #323130; }
-        
-        .header { background: var(--primary); color: white; padding: 2rem; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .container { max-width: 900px; margin: 2rem auto; padding: 1rem; }
-        
-        .card { background: white; padding: 1.5rem; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 2rem; }
-        h2 { margin-bottom: 1rem; color: var(--primary); border-bottom: 2px solid var(--bg); padding-bottom: 0.5rem; }
-
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
-        input[type="text"], input[type="email"] { width: 100%; padding: 0.6rem; border: 1px solid #8a8886; border-radius: 2px; }
-        
-        .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 2px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .btn-add { background: var(--primary); color: white; width: 100%; }
-        .btn-add:hover { background: #005a9e; }
-        .btn-del { background: #fde7e9; color: var(--danger); border: 1px solid var(--danger); }
-        .btn-del:hover { background: var(--danger); color: white; }
-
-        .user-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--bg); }
-        .user-item:last-child { border-bottom: none; }
-        .user-status { font-size: 0.8rem; padding: 2px 8px; border-radius: 10px; }
-        .status-active { background: #dff6dd; color: var(--success); }
-        .status-inactive { background: #fde7e9; color: var(--danger); }
-
-        #api-status { font-size: 0.9rem; margin-top: 10px; font-weight: bold; }
-    </style>
-</head>
 <body>
-
     <div class="header">
         <h1>Cloud-Project: User Management</h1>
         <div id="api-status">Connecting to Kubernetes API...</div>
@@ -43,8 +6,10 @@
 
     <div class="container">
         <div class="card">
-            <h2>Add New User</h2>
+            <h2 id="formTitle">Add New User</h2>
             <form id="userForm">
+                <input type="hidden" id="userId">
+                
                 <div class="form-group">
                     <label>Username</label>
                     <input type="text" id="username" placeholder="e.g. mohammed761" required>
@@ -57,7 +22,8 @@
                     <input type="checkbox" id="is_active" checked>
                     <label style="display: inline; margin-left: 5px;">Mark as Active</label>
                 </div>
-                <button type="submit" class="btn btn-add">Save User to Cloud</button>
+                <button type="submit" id="submitBtn" class="btn btn-add">Save User to Cloud</button>
+                <button type="button" id="cancelBtn" class="btn" style="display:none; margin-top:10px;" onclick="resetForm()">Cancel Edit</button>
             </form>
         </div>
 
@@ -70,85 +36,65 @@
     </div>
 
     <script>
-        // Use your Kubernetes Service IP and NodePort
         const API_URL = "http://74.242.218.195:30080";
 
-        // Check Connection
-        async function checkHealth() {
-            try {
-                const res = await fetch(`${API_URL}/`);
-                if(res.ok) {
-                    document.getElementById('api-status').innerHTML = "🟢 API Online (Kubernetes)";
-                    document.getElementById('api-status').style.color = "#90EE90";
-                }
-            } catch (e) {
-                document.getElementById('api-status').innerHTML = "🔴 API Offline (Check Firewall/K8s)";
-                document.getElementById('api-status').style.color = "#FFB6C6";
-            }
+        // ... keep checkHealth() and getUsers() ...
+        // Update the user item rendering inside getUsers() to include the Edit button:
+        /* Replace the innerHTML part of getUsers with this:
+           <button class="btn" style="border: 1px solid var(--primary); color: var(--primary); margin-right: 5px;" onclick="editUser('${user.id}', '${user.username}', '${user.email}', ${user.is_active})">Edit</button>
+           <button class="btn btn-del" onclick="deleteUser('${user.id}')">Delete</button>
+        */
+
+        // NEW: Load user data into form for editing
+        function editUser(id, username, email, is_active) {
+            document.getElementById('userId').value = id;
+            document.getElementById('username').value = username;
+            document.getElementById('email').value = email;
+            document.getElementById('is_active').checked = is_active;
+            
+            document.getElementById('formTitle').innerText = "Edit User";
+            document.getElementById('submitBtn').innerText = "Update User";
+            document.getElementById('cancelBtn').style.display = "block";
         }
 
-        // Fetch Users
-        async function getUsers() {
-            try {
-                const res = await fetch(`${API_URL}/users/`);
-                const users = await res.json();
-                const listDiv = document.getElementById('userList');
-                listDiv.innerHTML = '';
-
-                if (users.length === 0) {
-                    listDiv.innerHTML = '<p style="text-align:center;">No users found in database.</p>';
-                    return;
-                }
-
-                users.forEach(user => {
-                    const statusClass = user.is_active ? 'status-active' : 'status-inactive';
-                    const statusText = user.is_active ? 'Active' : 'Inactive';
-                    
-                    listDiv.innerHTML += `
-                        <div class="user-item">
-                            <div>
-                                <strong>${user.username}</strong> <br>
-                                <small>${user.email}</small> <br>
-                                <span class="user-status ${statusClass}">${statusText}</span>
-                            </div>
-                            <button class="btn btn-del" onclick="deleteUser('${user.id}')">Delete</button>
-                        </div>
-                    `;
-                });
-            } catch (err) { console.error("Error fetching users", err); }
+        function resetForm() {
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('formTitle').innerText = "Add New User";
+            document.getElementById('submitBtn').innerText = "Save User to Cloud";
+            document.getElementById('cancelBtn').style.display = "none";
         }
 
-        // Create User
+        // UPDATED: Create OR Update User logic
         document.getElementById('userForm').onsubmit = async (e) => {
             e.preventDefault();
+            const id = document.getElementById('userId').value;
             const data = {
                 username: document.getElementById('username').value,
                 email: document.getElementById('email').value,
                 is_active: document.getElementById('is_active').checked
             };
 
-            await fetch(`${API_URL}/users/`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
-            });
+            if (id) {
+                // UPDATE (PUT)
+                await fetch(`${API_URL}/users/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+            } else {
+                // CREATE (POST)
+                await fetch(`${API_URL}/users/`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+            }
 
-            document.getElementById('userForm').reset();
+            resetForm();
             getUsers();
         };
 
-        // Delete User
-        async function deleteUser(id) {
-            if(confirm("Confirm deletion?")) {
-                await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
-                getUsers();
-            }
-        }
-
-        // Init
-        checkHealth();
-        getUsers();
-        setInterval(getUsers, 5000); // Auto-refresh every 5s
+        // ... keep deleteUser() and Init ...
     </script>
 </body>
-</html>
