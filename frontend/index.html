@@ -1,71 +1,136 @@
-<body>
-    <div class="header">
-        <h1>Cloud-Project: User Management</h1>
-        <div id="api-status">Connecting to Kubernetes API...</div>
-    </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management | Cloud Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 font-sans antialiased text-gray-900">
 
-    <div class="container">
-        <div class="card">
-            <h2 id="formTitle">Add New User</h2>
-            <form id="userForm">
-                <input type="hidden" id="userId">
-                
-                <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" id="username" placeholder="e.g. mohammed761" required>
-                </div>
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" id="email" placeholder="user@example.com" required>
-                </div>
-                <div class="form-group">
-                    <input type="checkbox" id="is_active" checked>
-                    <label style="display: inline; margin-left: 5px;">Mark as Active</label>
-                </div>
-                <button type="submit" id="submitBtn" class="btn btn-add">Save User to Cloud</button>
-                <button type="button" id="cancelBtn" class="btn" style="display:none; margin-top:10px;" onclick="resetForm()">Cancel Edit</button>
-            </form>
+    <nav class="bg-white border-b border-gray-200 py-4 px-8 flex justify-between items-center sticky top-0 z-50">
+        <h1 class="text-xl font-bold tracking-tight text-indigo-600">CLOUD<span class="text-gray-900">LAB</span></h1>
+        <div id="api-status" class="text-xs font-semibold px-3 py-1 rounded-full bg-red-100 text-red-600 transition-all duration-500">
+            API OFFLINE
         </div>
+    </nav>
 
-        <div class="card">
-            <h2>Registered Users</h2>
-            <div id="userList">
-                <p style="text-align: center; color: #605e5c;">Loading users from K8s cluster...</p>
+    <main class="max-w-5xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="lg:col-span-1">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h2 id="formTitle" class="text-lg font-semibold mb-4">Add New User</h2>
+                <form id="userForm" class="space-y-4">
+                    <input type="hidden" id="userId">
+                    <div>
+                        <label class="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-1">Username</label>
+                        <input type="text" id="username" class="w-full border-gray-200 border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. mohammed_dev" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-1">Email</label>
+                        <input type="email" id="email" class="w-full border-gray-200 border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="mohammed@example.com" required>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="is_active" checked class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                        <label class="ml-2 text-sm text-gray-600">Active Account</label>
+                    </div>
+                    <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition-colors">
+                        Save User
+                    </button>
+                    <button type="button" id="cancelBtn" onclick="resetForm()" class="hidden w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium py-2.5 rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                </form>
             </div>
         </div>
-    </div>
+
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                    <h2 class="font-semibold">Registered Users</h2>
+                    <span id="userCount" class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded-full">0 Users</span>
+                </div>
+                <div id="userList" class="divide-y divide-gray-100">
+                    <div class="p-8 text-center text-gray-400 italic">Connecting to cluster...</div>
+                </div>
+            </div>
+        </div>
+    </main>
 
     <script>
         const API_URL = "http://74.242.218.195:30080";
 
-        // ... keep checkHealth() and getUsers() ...
-        // Update the user item rendering inside getUsers() to include the Edit button:
-        /* Replace the innerHTML part of getUsers with this:
-           <button class="btn" style="border: 1px solid var(--primary); color: var(--primary); margin-right: 5px;" onclick="editUser('${user.id}', '${user.username}', '${user.email}', ${user.is_active})">Edit</button>
-           <button class="btn btn-del" onclick="deleteUser('${user.id}')">Delete</button>
-        */
+        async function checkHealth() {
+            try {
+                const res = await fetch(`${API_URL}/`);
+                const statusEl = document.getElementById('api-status');
+                if(res.ok) {
+                    statusEl.innerHTML = "● API ONLINE";
+                    statusEl.className = "text-xs font-semibold px-3 py-1 rounded-full bg-green-100 text-green-600";
+                }
+            } catch (e) {
+                console.error("Health check failed");
+            }
+        }
 
-        // NEW: Load user data into form for editing
+        async function getUsers() {
+            try {
+                const res = await fetch(`${API_URL}/users/`);
+                const users = await res.json();
+                const listDiv = document.getElementById('userList');
+                document.getElementById('userCount').innerText = `${users.length} Users`;
+                listDiv.innerHTML = '';
+
+                if (users.length === 0) {
+                    listDiv.innerHTML = '<div class="p-8 text-center text-gray-400">No users found.</div>';
+                    return;
+                }
+
+                users.forEach(user => {
+                    const statusBadge = user.is_active ? 
+                        '<span class="px-2 py-1 text-[10px] font-bold bg-green-100 text-green-700 rounded-md uppercase">Active</span>' : 
+                        '<span class="px-2 py-1 text-[10px] font-bold bg-gray-100 text-gray-500 rounded-md uppercase">Inactive</span>';
+                    
+                    listDiv.innerHTML += `
+                        <div class="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center space-x-4">
+                                <div class="h-10 w-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold">
+                                    ${user.username.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-900">${user.username}</div>
+                                    <div class="text-xs text-gray-500">${user.email}</div>
+                                </div>
+                                <div class="ml-2">${statusBadge}</div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="editUser('${user.id}', '${user.username}', '${user.email}', ${user.is_active})" class="text-xs font-medium text-indigo-600 hover:text-indigo-800 p-2">Edit</button>
+                                <button onclick="deleteUser('${user.id}')" class="text-xs font-medium text-red-600 hover:text-red-800 p-2">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (err) { console.error("Error fetching users", err); }
+        }
+
         function editUser(id, username, email, is_active) {
             document.getElementById('userId').value = id;
             document.getElementById('username').value = username;
             document.getElementById('email').value = email;
             document.getElementById('is_active').checked = is_active;
-            
             document.getElementById('formTitle').innerText = "Edit User";
-            document.getElementById('submitBtn').innerText = "Update User";
-            document.getElementById('cancelBtn').style.display = "block";
+            document.getElementById('submitBtn').innerText = "Update Changes";
+            document.getElementById('cancelBtn').classList.remove('hidden');
         }
 
         function resetForm() {
             document.getElementById('userForm').reset();
             document.getElementById('userId').value = '';
             document.getElementById('formTitle').innerText = "Add New User";
-            document.getElementById('submitBtn').innerText = "Save User to Cloud";
-            document.getElementById('cancelBtn').style.display = "none";
+            document.getElementById('submitBtn').innerText = "Save User";
+            document.getElementById('cancelBtn').classList.add('hidden');
         }
 
-        // UPDATED: Create OR Update User logic
         document.getElementById('userForm').onsubmit = async (e) => {
             e.preventDefault();
             const id = document.getElementById('userId').value;
@@ -75,26 +140,30 @@
                 is_active: document.getElementById('is_active').checked
             };
 
-            if (id) {
-                // UPDATE (PUT)
-                await fetch(`${API_URL}/users/${id}`, {
-                    method: 'PUT',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
-                });
-            } else {
-                // CREATE (POST)
-                await fetch(`${API_URL}/users/`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
-                });
-            }
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_URL}/users/${id}` : `${API_URL}/users/`;
+
+            await fetch(url, {
+                method: method,
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
 
             resetForm();
             getUsers();
         };
 
-        // ... keep deleteUser() and Init ...
+        async function deleteUser(id) {
+            if(confirm("Permanently delete this user?")) {
+                await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+                getUsers();
+            }
+        }
+
+        // Initialize
+        checkHealth();
+        getUsers();
+        setInterval(getUsers, 5000); 
     </script>
 </body>
+</html>
