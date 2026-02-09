@@ -13,8 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copier le reste du code (main.py)
 COPY . .
 
-# Exposer le port que FastAPI utilise
-EXPOSE 8000
+# Exposer le port 80 (Standard pour K8s Internal Service)
+EXPOSE 80
 
-# Commande pour lancer l'API
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Commande pour lancer l'API sur le port 80
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]

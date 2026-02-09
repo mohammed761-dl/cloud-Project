@@ -1,9 +1,21 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from uuid import UUID, uuid4
 from typing import List
+import os
 
 app = FastAPI()
+
+# --- STEP 1: FIX THE "OFFLINE" ERROR (CORS) ---
+# This allows your frontend at port 30081 to talk to this API at port 30080
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with your specific IP
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Notre modèle de données
 class User(BaseModel):
@@ -12,24 +24,18 @@ class User(BaseModel):
     email: EmailStr
     is_active: bool = True
 
-# Simulation de base de données (en mémoire)
+# --- STEP 2: DATABASE LOGIC ---
+# If you have Azure SQL set up, we would use SQLAlchemy here.
+# For now, we use the memory list, but CORS will make the light turn GREEN.
 db: List[User] = []
-
 
 @app.get("/")
 def root():
     return {
+        "status": "online",
         "message": "User Management API",
-        "endpoints": {
-            "docs": "/docs",
-            "create_user": "POST /users/",
-            "list_users": "GET /users/",
-            "get_user": "GET /users/{user_id}",
-            "update_user": "PUT /users/{user_id}",
-            "delete_user": "DELETE /users/{user_id}"
-        }
+        "database": "Memory (Pending Azure SQL Connection)"
     }
-
 
 @app.post("/users/", status_code=201)
 def create_user(user: User):
@@ -60,7 +66,6 @@ def delete_user(user_id: UUID):
 def update_user(user_id: UUID, updated_data: User):
     for index, user in enumerate(db):
         if user.id == user_id:
-            # On garde l'ID original mais on met à jour le reste
             updated_data.id = user_id 
             db[index] = updated_data
             return updated_data
