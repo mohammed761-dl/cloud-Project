@@ -2,72 +2,60 @@ pipeline {
     agent any
 
     environment {
-        // Use the KUBERNET VM IP here (.195), not the Jenkins IP (.126)
         DOCKER_REGISTRY = '74.242.218.126:3000'
-        IMAGE_NAME = 'mohammed/user-mgmt-api'
+        BACKEND_IMAGE = 'mohammed/user-mgmt-api'
+        FRONTEND_IMAGE = 'mohammed/frontend'
         TAG = "${env.BUILD_NUMBER}"
     }
 
     stages {
-        stage('Build Docker Image') {
+        stage('Build & Push Backend') {
             steps {
-                echo '🔨 Building Docker image...'
-                sh """
-                    docker build -t ${DOCKER_REGISTRY}/${IMAGE_NAME}:${TAG} .
-                    docker tag ${DOCKER_REGISTRY}/${IMAGE_NAME}:${TAG} ${DOCKER_REGISTRY}/${IMAGE_NAME}:latest
-                """
-            }
-        }
-
-        stage('Push to Gitea Registry') {
-            steps {
-                echo '📤 Pushing image to Gitea...'
-                withCredentials([usernamePassword(
-                    credentialsId: 'gitea-docker-credentials',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
+                echo '🔨 Building & Pushing Backend...'
+                withCredentials([usernamePassword(credentialsId: 'gitea-docker-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh """
+                        docker build -t ${DOCKER_REGISTRY}/${BACKEND_IMAGE}:${TAG} ./backend
+                        docker tag ${DOCKER_REGISTRY}/${BACKEND_IMAGE}:${TAG} ${DOCKER_REGISTRY}/${BACKEND_IMAGE}:latest
+                        
                         echo \$DOCKER_PASS | docker login ${DOCKER_REGISTRY} -u \$DOCKER_USER --password-stdin
-                        docker push ${DOCKER_REGISTRY}/${IMAGE_NAME}:${TAG}
-                        docker push ${DOCKER_REGISTRY}/${IMAGE_NAME}:latest
-                        docker logout ${DOCKER_REGISTRY}
+                        docker push ${DOCKER_REGISTRY}/${BACKEND_IMAGE}:${TAG}
+                        docker push ${DOCKER_REGISTRY}/${BACKEND_IMAGE}:latest
                     """
                 }
             }
         }
 
-        stage('Deploy to Azure K8s') {
+        stage('Build & Push Frontend') {
+            steps {
+                echo '🎨 Building & Pushing Frontend...'
+                withCredentials([usernamePassword(credentialsId: 'gitea-docker-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh """
+                        docker build -t ${DOCKER_REGISTRY}/${FRONTEND_IMAGE}:${TAG} ./frontend
+                        docker tag ${DOCKER_REGISTRY}/${FRONTEND_IMAGE}:${TAG} ${DOCKER_REGISTRY}/${FRONTEND_IMAGE}:latest
+                        
+                        echo \$DOCKER_PASS | docker login ${DOCKER_REGISTRY} -u \$DOCKER_USER --password-stdin
+                        docker push ${DOCKER_REGISTRY}/${FRONTEND_IMAGE}:${TAG}
+                        docker push ${DOCKER_REGISTRY}/${FRONTEND_IMAGE}:latest
+                    """
+                }
+            }
+        }
+
+        stage('Deploy with Ansible') {
             steps {
                 withCredentials([file(credentialsId: 'k3s-config', variable: 'KUBECONFIG_FILE')]) {
-                    script {
-                        echo '☸️ Deploying to Azure K8s...'
-                        sh """
-                            export KUBECONFIG=${KUBECONFIG_FILE}
-                            
-                            # Deploy to the KUBERNET VM (.195)
-                            kubectl apply -f k8s-deploy.yaml \
-                                --server=https://74.242.218.195:6443 \
-                                --insecure-skip-tls-verify=true \
-                                --validate=false
-                            
-                            kubectl set image deployment/user-management-app \
-                                fastapi-user-mgmt=${DOCKER_REGISTRY}/${IMAGE_NAME}:${TAG} \
-                                --server=https://74.242.218.195:6443 \
-                                --insecure-skip-tls-verify=true
-                        """
-                    }
+                    echo 'Running Ansible Playbook...'
+                    sh """
+                        export KUBECONFIG=${KUBECONFIG_FILE}
+                        ansible-playbook ansible/deploy.yml
+                    """
                 }
             }
         }
     }
 
     post {
-        success {
-            echo '✅ Build & Push SUCCESS'
-        }
-        failure {
-            echo '❌ Build FAILED'
-        }
+        success { echo 'Pipeline Finished Successfully!' }
+        failure { echo 'Pipeline Failed. Check console output.' }
     }
 }

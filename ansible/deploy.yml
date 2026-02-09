@@ -1,0 +1,16 @@
+---
+- name: Deploy Microservices to Kubernetes
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Apply User Management Backend
+      shell: |
+        kubectl apply -f backend/k8s-deploy.yaml --server=https://74.242.218.195:6443 --insecure-skip-tls-verify=true
+      environment:
+        KUBECONFIG: "{{ lookup('env', 'KUBECONFIG') }}"
+
+    - name: Apply Frontend Service
+      shell: |
+        kubectl apply -f frontend/k8s-frontend-deploy.yaml --server=https://74.242.218.195:6443 --insecure-skip-tls-verify=true
+      environment:
+        KUBECONFIG: "{{ lookup('env', 'KUBECONFIG') }}"

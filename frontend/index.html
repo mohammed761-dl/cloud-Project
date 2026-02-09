@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EduCloud Platform</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f4f4f4; }
+        .navbar { background: #0078d4; color: white; padding: 1rem; }
+        .container { padding: 2rem; }
+        .video-card { background: white; padding: 10px; border-radius: 8px; display: inline-block; margin: 10px; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <img src="https://yourstorage.blob.core.windows.net/assets/logo.png" alt="EduCloud Logo" style="height:50px;">
+        <h1>Educational Course Catalog</h1>
+    </div>
+
+    <div class="container">
+        <h2>Available Courses</h2>
+        <div class="video-card">
+            <h3>DevOps 101</h3>
+            <video width="320" height="240" controls>
+                <source src="https://yourstorage.blob.core.windows.net/videos/course1.mp4" type="video/mp4">
+            </video>
+        </div>
+        
+        <hr>
+        <h3>User Management System</h3>
+        <p>Status: <b id="status" style="color:red;">Checking Backend...</b></p>
+    </div>
+
+    <script>
+        // Check if Backend (User CRUD) is reachable
+        fetch('http://74.242.218.195:30080/users')
+            .then(res => { if(res.ok) document.getElementById('status').innerText = 'Connected to Backend (SQL)'; document.getElementById('status').style.color = 'green'; })
+            .catch(err => console.error("Backend not reached"));
+    </script>
+</body>
+</html>
