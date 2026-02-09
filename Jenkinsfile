@@ -44,7 +44,7 @@ pipeline {
         stage('Deploy with Ansible') {
             steps {
                 withCredentials([file(credentialsId: 'k3s-config', variable: 'KUBECONFIG_FILE')]) {
-                    echo 'Running Ansible Playbook...'
+                    echo '🚀 Running Ansible Playbook...'
                     sh """
                         export KUBECONFIG=${KUBECONFIG_FILE}
                         ansible-playbook ansible/deploy.yml
@@ -52,10 +52,31 @@ pipeline {
                 }
             }
         }
+
+        stage('Force Refresh for Demo') {
+            steps {
+                withCredentials([file(credentialsId: 'k3s-config', variable: 'KUBECONFIG_FILE')]) {
+                    echo '🔄 Forcing Kubernetes to pull the LATEST images...'
+                    sh """
+                        export KUBECONFIG=${KUBECONFIG_FILE}
+                        # This triggers a rolling restart to pick up the fresh :latest images
+                        kubectl rollout restart deployment user-management-app
+                        kubectl rollout restart deployment frontend-app
+                        
+                        # Wait for the frontend to be ready so you don't refresh too early
+                        kubectl rollout status deployment frontend-app
+                    """
+                }
+            }
+        }
     }
 
     post {
-        success { echo 'Pipeline Finished Successfully!' }
-        failure { echo 'Pipeline Failed. Check console output.' }
+        success { 
+            echo '✅ Pipeline Finished Successfully! Your demo is ready.' 
+        }
+        failure { 
+            echo '❌ Pipeline Failed. Check the console logs.' 
+        }
     }
 }
