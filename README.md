@@ -462,7 +462,7 @@ This project is licensed under the MIT License.
 
 ## 👥 Authors
 
-- **Mohammed** - Initial work
+- **Mohammed Cherkaoui** - Owner & Initial work
 
 ---
 
