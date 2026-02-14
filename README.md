@@ -474,14 +474,3 @@ This project is licensed under the MIT License.
 - Azure for cloud infrastructure
 
 ---
-
-## 📞 Support
-
-For issues and questions:
-
-- Create an issue in the repository
-- Contact: [Your Email]
-
----
-
-**Made with ❤️ for DevOps Excellence**
